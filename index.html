@@ -357,43 +357,55 @@
         });
 
         async function fetchImage() {
-            try {
-                loadingOverlay.classList.add('visible');
-                imageContainer.classList.add('slide-out');
-                refreshButton.disabled = true;
-                
-                const response = await axios.get('https://api.waifu.pics/nsfw/neko');
-                
-                const imageLoadPromise = new Promise((resolve, reject) => {
-                    const tempImg = new Image();
-                    tempImg.onload = resolve;
-                    tempImg.onerror = reject;
-                    tempImg.src = response.data.url;
-                });
+    try {
+        loadingOverlay.classList.add('visible');
+        imageContainer.classList.add('slide-out');
+        refreshButton.disabled = true;
 
-                await Promise.all([
-                    new Promise(resolve => setTimeout(resolve, 200)),
-                    imageLoadPromise
-                ]);
+        // Fetch image data from the new API
+        const response = await axios.get('https://api.waifu.im/search/?included_tags=milf');
 
-                imgElement.src = response.data.url;
-                
-                loadingOverlay.classList.remove('visible');
-                imageContainer.classList.remove('slide-out');
-                imageContainer.classList.add('slide-in');
-                refreshButton.disabled = false;
-                
-                setTimeout(() => {
-                    imageContainer.classList.remove('slide-in');
-                }, 400);
-            } catch (error) {
-                console.error('Error fetching image:', error);
-                imgElement.alt = 'Failed to load image';
-                loadingOverlay.classList.remove('visible');
-                refreshButton.disabled = false;
-                alert('Failed to load image. Please try again.');
-            }
+        // Check if images are returned in the response
+        if (response.data.images && response.data.images.length > 0) {
+            // Get the first image from the response
+            const imageData = response.data.images[0];
+            const imageUrl = imageData.url;
+
+            // Load the image and wait for it to be ready
+            const imageLoadPromise = new Promise((resolve, reject) => {
+                const tempImg = new Image();
+                tempImg.onload = resolve;
+                tempImg.onerror = reject;
+                tempImg.src = imageUrl;
+            });
+
+            await Promise.all([
+                new Promise(resolve => setTimeout(resolve, 200)), // Optional delay
+                imageLoadPromise
+            ]);
+
+            imgElement.src = imageUrl;
+
+            loadingOverlay.classList.remove('visible');
+            imageContainer.classList.remove('slide-out');
+            imageContainer.classList.add('slide-in');
+            refreshButton.disabled = false;
+
+            setTimeout(() => {
+                imageContainer.classList.remove('slide-in');
+            }, 400);
+        } else {
+            throw new Error('No images found.');
         }
+    } catch (error) {
+        console.error('Error fetching image:', error);
+        imgElement.alt = 'Failed to load image';
+        loadingOverlay.classList.remove('visible');
+        refreshButton.disabled = false;
+        alert('Failed to load image. Please try again.');
+    }
+}
+
 
         downloadButton.addEventListener('click', () => {
             if (imgElement.src) {
